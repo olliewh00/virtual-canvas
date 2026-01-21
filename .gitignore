@@ -1,0 +1,19 @@
+
+# Python junk
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Data files (Don't commit your live database/CSV)
+data.csv
+crypto_history.csv
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/config.toml
