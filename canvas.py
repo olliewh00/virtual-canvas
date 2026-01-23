@@ -10,11 +10,12 @@ try:
 
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (0, 255, 255)]
     colorIndex = 0
+    brush_thickness = 15
 
     # Initialize canvas with a default size, will be resized if needed
     canvas = np.full((720, 1280, 3), 255, dtype=np.uint8)
     
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     cap.set(3, 1280)
     cap.set(4, 720)
     
@@ -42,6 +43,18 @@ try:
         cv2.rectangle(frame, (160, 1), (260, 80), colors[1], -1)
         cv2.rectangle(frame, (280, 1), (380, 80), colors[2], -1)
         cv2.rectangle(frame, (400, 1), (500, 80), colors[3], -1)
+
+        # Size buttons (Small, Medium, Large)
+        cv2.circle(frame, (800, 40), 40, (0, 0, 0), 2) 
+        cv2.circle(frame, (800, 40), 10, (100, 100, 100), -1) # Small 10px
+
+        cv2.circle(frame, (900, 40), 40, (0, 0, 0), 2)
+        cv2.circle(frame, (900, 40), 20, (100, 100, 100), -1) # Medium 20px
+
+        cv2.circle(frame, (1000, 40), 40, (0, 0, 0), 2)
+        cv2.circle(frame, (1000, 40), 30, (100, 100, 100), -1) # Large 30px
+        
+        cv2.putText(frame, "SIZES", (880, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
         # Ensure canvas matches frame size
         if canvas.shape[:2] != (h, w):
@@ -75,33 +88,41 @@ try:
                         elif 160 < cx < 260: colorIndex = 1
                         elif 280 < cx < 380: colorIndex = 2
                         elif 400 < cx < 500: colorIndex = 3
-                        elif 520 < cx < 620: colorIndex = -1
-                    
+                        # Check Size Selection
+                        elif 760 < cx < 840: brush_thickness = 10
+                        elif 860 < cx < 940: brush_thickness = 20
+                        elif 960 < cx < 1040: brush_thickness = 30
+
                     cv2.circle(frame, (cx, cy), 10, colors[colorIndex] if colorIndex >= 0 else (0,0,0), cv2.FILLED)
 
                 elif fingers[0] and not fingers[1]: # Draw Mode
                     col = colors[colorIndex] if colorIndex >= 0 else (255, 255, 255)
-                    cv2.circle(frame, (cx, cy), 15, col if colorIndex >= 0 else (0,0,0), cv2.FILLED)
+                    
+                    # --- Smoothing Logic ---
+                    alpha = 0.5
+                    if 'smooth_cx' not in locals(): smooth_cx, smooth_cy = cx, cy
+                    if prev_x == 0 and prev_y == 0: smooth_cx, smooth_cy = cx, cy
+                    smooth_cx = int(smooth_cx * (1 - alpha) + cx * alpha)
+                    smooth_cy = int(smooth_cy * (1 - alpha) + cy * alpha)
+                    curr_x, curr_y = smooth_cx, smooth_cy
+
+                    # Visual feedback for cursor
+                    cv2.circle(frame, (curr_x, curr_y), brush_thickness, col if colorIndex >= 0 else (0,0,0), cv2.FILLED)
                     
                     if prev_x == 0 and prev_y == 0:
-                        prev_x, prev_y = cx, cy
+                        prev_x, prev_y = curr_x, curr_y
                     
-                    cv2.line(canvas, (prev_x, prev_y), (cx, cy), col, 15 if colorIndex >= 0 else 50)
-                    prev_x, prev_y = cx, cy
+                    cv2.line(canvas, (prev_x, prev_y), (curr_x, curr_y), col, brush_thickness)
+                    
+                    prev_x, prev_y = curr_x, curr_y
                 else:
                     prev_x, prev_y = 0, 0
 
-        # Blending logic for White Canvas
         canvas_gray = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
-        # Create mask of drawing (where canvas is NOT white)
         _, inv_mask = cv2.threshold(canvas_gray, 250, 255, cv2.THRESH_BINARY_INV)
         inv_mask = cv2.cvtColor(inv_mask, cv2.COLOR_GRAY2BGR)
-        
-        # Remove drawing area from frame
         frame = cv2.bitwise_and(frame, cv2.bitwise_not(inv_mask))
-        # Extract drawing from canvas
         drawing = cv2.bitwise_and(canvas, inv_mask)
-        # Combine
         frame = cv2.add(frame, drawing)        
         
         cv2.imshow("Air Canvas", frame)
