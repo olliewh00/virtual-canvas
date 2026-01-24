@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import traceback
+from datetime import datetime
 
 try:
     mp_hands = mp.solutions.hands
@@ -115,6 +116,13 @@ try:
                     cv2.line(canvas, (prev_x, prev_y), (curr_x, curr_y), col, brush_thickness)
                     
                     prev_x, prev_y = curr_x, curr_y
+                
+                elif thumb_up and all(f == 0 for f in fingers): # Snapshot Mode (Thumb Up, others down)
+                    filename = f"snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                    cv2.imwrite(filename, canvas)
+                    cv2.putText(frame, "Snapshot Saved!", (cx, cy-50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    prev_x, prev_y = 0, 0
+
                 else:
                     prev_x, prev_y = 0, 0
 
