@@ -16,7 +16,7 @@ try:
     # Initialize canvas with a default size, will be resized if needed
     canvas = np.full((720, 1280, 3), 255, dtype=np.uint8)
     
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     cap.set(3, 1280)
     cap.set(4, 720)
     
@@ -77,9 +77,6 @@ try:
                 fingers.append(1 if lm12.y < hand_landmarks.landmark[10].y else 0)
                 fingers.append(1 if hand_landmarks.landmark[16].y < hand_landmarks.landmark[14].y else 0)
                 fingers.append(1 if hand_landmarks.landmark[20].y < hand_landmarks.landmark[18].y else 0)
-
-                # Thumb status (Tip above IP for "Thumb Up" if hand is vertical)
-                thumb_up = hand_landmarks.landmark[4].y < hand_landmarks.landmark[3].y
 
                 if all(fingers): # Palm (4 fingers up) -> Clear
                     canvas[:] = 255
